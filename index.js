@@ -31,6 +31,7 @@ async function run() {
 
     // List of  collections
     const productCollection = client.db("productPlanet").collection("products");
+    const userCollection = client.db("productPlanet").collection("users");
 
     //    const menuCollection=client.db('BistroDB').collection('menu')
     //    const userCollection=client.db('BistroDB').collection('users')
@@ -60,6 +61,49 @@ async function run() {
         next();
       });
     };
+
+    // user related
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      // insert email if user doesnt exists:
+      // you can do this many ways (1. email unique, 2. upsert 3. simple checking)
+      const query = { email: user.email };
+      const existingUser = await userCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "user already exists", insertedId: null });
+      }
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // moderator related
+    
+    //verify moderator 
+ const verifyModerator=async(req,res,next)=>{
+  const email= req.decoded.email;
+  const query= {email: email}
+  const user= await userCollection.findOne(query);
+  const isModerator=user?.role==='moderator';
+  if(!isModerator){
+   return res.status(403).send({message: "Forbidden Access"});
+
+  }
+  next()
+}
+    // moderator 
+    app.get("/users/moderator/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.params.email) {
+        return res.status(403).send({ message: "Unauthorized Access" });
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let moderator = false;
+      if (user) {
+        moderator = user?.role === "moderator";
+      }
+      res.send({ moderator });
+    });
 
     // products related
 
@@ -94,6 +138,24 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await productCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    //update product
+    app.patch("/UpdateProduct/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: req.body,
+      };
+
+      const result = await productCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
       res.send(result);
     });
 
