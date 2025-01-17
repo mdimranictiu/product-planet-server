@@ -129,6 +129,24 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       res.send(result);
     });
 
+    //make as feature
+    app.patch("/makeProductAsFeature/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: req.body,
+      };
+
+      const result = await productCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
+      res.send(result);
+    });
+
     // products related
 
     // add Product
@@ -141,6 +159,12 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
     });
 
     // fetch products
+    app.get("/find/product/:data",  async (req, res) => {
+      const productID= req.params.data;
+      const query = { _id: new ObjectId(productID) };
+      const result = await productCollection.findOne(query);
+      res.send(result);
+    });
 
     app.get("/myProducts", verifyToken, async (req, res) => {
       const email = req.decoded.email;
@@ -155,6 +179,7 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       const result = await productCollection.findOne(query);
       res.send(result);
     });
+   
 
     // delete a product
 
@@ -182,7 +207,21 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
 
       res.send(result);
     });
-
+    //update upvote
+    app.patch('/product/upvote/:id',verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const { upvoteCount, user } = req.body;
+    
+      const query = { _id: new ObjectId(id), upvoters: { $ne: user } };
+      const update = {
+        $set: { upvoteCount },
+        $addToSet: { upvoters: user }, // Add user to upvoters if not already present
+      };
+    
+      const result = await productCollection.updateOne(query, update);
+      res.send(result);
+    });
+    
     // user related information
     //    app.post('/users', async (req, res) => {
     //     const user = req.body;
