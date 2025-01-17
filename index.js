@@ -33,11 +33,7 @@ async function run() {
     const productCollection = client.db("productPlanet").collection("products");
     const userCollection = client.db("productPlanet").collection("users");
 
-    //    const menuCollection=client.db('BistroDB').collection('menu')
-    //    const userCollection=client.db('BistroDB').collection('users')
-    //    const cartCollection=client.db('BistroDB').collection('carts')
-    //    const paymentCollection=client.db('BistroDB').collection('payment')
-
+  
     // JWT token Create
 
     app.post("/jwt", (req, res) => {
@@ -84,12 +80,22 @@ async function run() {
   const query= {email: email}
   const user= await userCollection.findOne(query);
   const isModerator=user?.role==='moderator';
+  console.log('isModerator',isModerator)
   if(!isModerator){
    return res.status(403).send({message: "Forbidden Access"});
 
   }
   next()
 }
+// product Review by Moderator
+
+app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
+  const query={status: 'pending'};
+  const result= await productCollection.find(query).toArray();
+  res.send(result)
+})
+
+
     // moderator 
     app.get("/users/moderator/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
