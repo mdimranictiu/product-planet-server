@@ -76,11 +76,11 @@ async function run() {
     
     //verify moderator 
  const verifyModerator=async(req,res,next)=>{
-  const email= req.decoded.email;
+  const email= req.decoded?.email;
   const query= {email: email}
   const user= await userCollection.findOne(query);
   const isModerator=user?.role==='moderator';
-  console.log('isModerator',isModerator)
+  //console.log('isModerator',isModerator)
   if(!isModerator){
    return res.status(403).send({message: "Forbidden Access"});
 
@@ -109,6 +109,24 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
         moderator = user?.role === "moderator";
       }
       res.send({ moderator });
+    });
+
+    //updateStatus by Moderator
+    app.patch("/updateProductStatus/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: req.body,
+      };
+
+      const result = await productCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
+      res.send(result);
     });
 
     // products related
