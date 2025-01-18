@@ -32,6 +32,7 @@ async function run() {
     // List of  collections
     const productCollection = client.db("productPlanet").collection("products");
     const userCollection = client.db("productPlanet").collection("users");
+    const reviewCollection = client.db("productPlanet").collection("reviews");
 
   
     // JWT token Create
@@ -221,6 +222,42 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       const result = await productCollection.updateOne(query, update);
       res.send(result);
     });
+
+    // report content
+    app.patch('/product/report/:id', verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const { reportStatus, user } = req.body;
+    
+      const query = { _id: new ObjectId(id), reporters: { $ne: user } };
+      const update = {
+        $set: { reportStatus },
+        $addToSet: { reporters: user }, // Add user to reporters if not already present
+      };
+    
+      const result = await productCollection.updateOne(query, update);
+      res.send(result);
+    });
+
+    // find all reported product
+    app.get('/find/reportedContent',verifyToken, async(req,res)=>{
+     const query= { reportStatus :true};
+     const result= await productCollection.find(query).toArray();
+     res.send(result)
+    })
+    // review submit
+    app.post('/addreview',verifyToken,async (req,res)=>{
+          const item= req.body;
+          const result= await reviewCollection.insertOne(item);
+          res.send(result)
+})
+
+//find reviews by id
+app.get("/find/review/:data",  async (req, res) => {
+  const productID= req.params.data;
+  const query = {productId: productID };
+  const result = await reviewCollection.find(query).toArray();
+  res.send(result);
+});
     
     // user related information
     //    app.post('/users', async (req, res) => {
