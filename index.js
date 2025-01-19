@@ -349,6 +349,19 @@ app.get("/find/review/:data",  async (req, res) => {
      res.send(result)
  })
 
+ app.get('/products', async(req,res)=>{
+ const query={status:'Accepted'}
+ const page= parseInt(req.query.page) || 1 // for first page 1
+ const skip =(page-1)*6;
+ const search= req.query?.search;
+  if(search){
+    query['tags.text']= {$regex: search, $options: 'i'}
+  } 
+  const total= await productCollection.countDocuments(query);
+  const result= await productCollection.find(query).skip(skip).limit(6).toArray();
+  res.send({products: result, currentPage:page,totalPages: Math.ceil(total/6),totalProducts: total,})
+})
+
 
 
 
