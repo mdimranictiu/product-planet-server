@@ -336,7 +336,13 @@ app.get("/find/review/:data",  async (req, res) => {
     res.send(result)
   })
 
+// get feature data
 
+ app.get('/feature-product', async(req,res)=>{
+     const query= {feature:true}
+     const result= await productCollection.find(query).sort({createdAt:-1}).limit(6).toArray();
+     res.send(result)
+ })
 
 
 
