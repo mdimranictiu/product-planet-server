@@ -2,7 +2,7 @@ const express = require("express");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const app = express();
-//const stripe= require("stripe")(process.env.Stripe_secret_key)
+const stripe= require("stripe")(process.env.Stripe_secret_key)
 const cors = require("cors");
 const port = process.env.PORT || 4100;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -70,9 +70,43 @@ async function run() {
         return res.send({ message: "user already exists", insertedId: null });
       }
       const result = await userCollection.insertOne(user);
+      console.log(user)
       res.send(result);
     });
+    //admin related
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.params.email) {
+        return res.status(403).send({ message: "Unauthorized Access" });
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
 
+    //verify admin
+    const verifyAdmin=async(req,res,next)=>{
+      const email= req.decoded?.email;
+      const query= {email: email}
+      const user= await userCollection.findOne(query);
+      const isAdmin=user?.role==='admin';
+      console.log('isAdmin',isAdmin)
+      if(!isAdmin){
+       return res.status(403).send({message: "Forbidden Access"});
+    
+      }
+      next()
+    }
+
+    //fetch all users
+    app.get('/users',verifyToken,verifyAdmin,async(req,res)=>{
+      const result= await userCollection.find().toArray();
+      res.send(result)
+    })
     // moderator related
     
     //verify moderator 
@@ -122,6 +156,40 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       };
 
       const result = await productCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
+      res.send(result);
+    });
+    // make as an moderator
+    app.patch("/users/makeModerator", verifyToken,verifyAdmin, async (req, res) => {
+      const { email: email }=req.body;
+      const filter = {email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: req.body,
+      };
+
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
+      res.send(result);
+    });
+    // make admin
+    app.patch("/users/makeAdmin", verifyToken, verifyAdmin, async (req, res) => {
+      const { email: email }=req.body;
+      const filter = {email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: req.body,
+      };
+
+      const result = await userCollection.updateOne(
         filter,
         updatedDoc,
         options
@@ -258,7 +326,22 @@ app.get("/find/review/:data",  async (req, res) => {
   const result = await reviewCollection.find(query).toArray();
   res.send(result);
 });
-    
+    //get payment Status
+
+  app.get('/users/payment-status/:email',verifyToken, async(req,res)=>{
+    const email=req.params.email
+    const query= {email: email};
+    //console.log('inside payment',email)
+    const result= await userCollection.findOne(query);
+    res.send(result)
+  })
+
+
+
+
+
+
+
     // user related information
     //    app.post('/users', async (req, res) => {
     //     const user = req.body;
@@ -382,74 +465,36 @@ app.get("/find/review/:data",  async (req, res) => {
 
     //    })
 
-    //    //payment intent
-    //   //  app.post('/create-payment-intent',async (req,res)=>{
-    //   //    const {price}=req.body;
-    //   //    const amount= parseInt(price *100)
-    //   //    console.log(amount)
+       //payment intent
+       app.post('/create-payment-intent',async (req,res)=>{
+         const {price}=req.body;
+         const amount= parseInt(price *100)
 
-    //   //    const paymentIntent= await stripe.paymentIntents.create({
-    //   //     amount : amount,
-    //   //     currency:"usd",
-    //   //     payment_method_types:['card']
-    //   //    })
-    //   //    res.send({
-    //   //     clientSecret: paymentIntent.client_secret,
-    //   //   });
-    //   //  })
-    //   app.post('/create-payment-intent', async (req, res) => {
-    //     const { price } = req.body;
-
-    //     // Validate price
-    //     if (!price || isNaN(price) || price <= 0) {
-    //       return res.status(400).send({ error: "Invalid price value. Price must be a positive number." });
-    //     }
-
-    //     // Convert to smallest currency unit (e.g., cents for USD)
-    //     const amount = Math.round(price * 100);
-
-    //     // Ensure amount meets Stripe's minimum charge requirement
-    //     if (amount < 50) { // $0.50 in cents
-    //       return res.status(400).send({ error: "Amount must be at least $0.50." });
-    //     }
-
-    //     // Create the PaymentIntent
-    //     const paymentIntent = await stripe.paymentIntents.create({
-    //       amount: amount,
-    //       currency: "usd",
-    //       payment_method_types: ["card"],
-    //     });
-
-    //     // Send client secret to the client
-    //     res.send({
-    //       clientSecret: paymentIntent.client_secret,
-    //     });
-    //   });
-
-    //   app.post('/payment', async (req, res) => {
-    //     const payment = req.body;
-
-    //     // Insert the payment details into the payment collection
-    //     const paymentResult = await paymentCollection.insertOne(payment);
-
-    //     // Construct the query for deleting items from the cart
-    //     const query = {
-    //       _id: {
-    //         $in: payment.cartIds.map((id) => new ObjectId(id)) // Correctly map to ObjectId
-    //       }
-    //     };
-
-    //     // Delete the corresponding items from the cart
-    //     const deleteResult = await cartCollection.deleteMany(query);
-
-    //     // Send the response
-    //     res.send({ paymentResult, deleteResult });
-    //   });
-
-    //   app.get('/payment',async(req,res)=>{
-    //     const result= await paymentCollection.find().toArray();
-    //     res.send(result)
-    //    })
+         const paymentIntent= await stripe.paymentIntents.create({
+          amount : amount,
+          currency:"usd",
+          payment_method_types:['card']
+         })
+         res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+       })
+       app.patch('/payment/:email',verifyToken,async(req,res)=>{
+        const email= req.params.email;
+        const filter = {email: email};
+        const options = { upsert: true };
+        const updatedDoc = {
+          $set: { paystatus: true }
+        };
+  
+        const result = await userCollection.updateOne(
+          filter,
+          updatedDoc,
+          options
+        );
+        res.send(result);
+       })
+      
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
