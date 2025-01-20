@@ -33,6 +33,7 @@ async function run() {
     const productCollection = client.db("productPlanet").collection("products");
     const userCollection = client.db("productPlanet").collection("users");
     const reviewCollection = client.db("productPlanet").collection("reviews");
+    const couponCollection = client.db("productPlanet").collection("coupon");
 
   
     // JWT token Create
@@ -370,7 +371,50 @@ app.get("/find/review/:data", verifyToken,verifyModerator,  async (req, res) => 
 })
 
 
+// add coupon
+app.post('/add/coupon', verifyToken,verifyAdmin, async(req,res)=>{
+  const data=req.body;
+  const result= await couponCollection.insertOne(data);
+  res.send(result);
+})
+//fetch coupon
+app.get('/find/coupon',verifyToken,verifyAdmin, async(req,res)=>{
+  const result= await couponCollection.find().toArray();
+  res.send(result)
+})
 
+app.delete("/coupon/delete/:id", verifyToken,verifyAdmin, async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const result = await couponCollection.deleteOne(query);
+  res.send(result);
+});
+
+//update coupon
+app.patch("/UpdateCoupon/:id", verifyToken,verifyAdmin, async (req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) };
+  const options = { upsert: true };
+  const updatedDoc = {
+    $set: req.body,
+  };
+
+  const result = await couponCollection.updateOne(
+    filter,
+    updatedDoc,
+    options
+  );
+
+  res.send(result);
+});
+
+// find a coupon by id
+app.get("/coupon/:id", verifyToken,verifyAdmin, async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const result = await couponCollection.findOne(query);
+  res.send(result);
+});
 
 
 // Payment Related
