@@ -241,6 +241,11 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       const result = await productCollection.find(query).toArray();
       res.send(result);
     });
+// all products for admin
+    app.get('/allProducts',verifyToken,verifyAdmin, async(req,res)=>{
+      const result = await productCollection.find().toArray();
+      res.send(result);
+    })
 
     app.get("/myProducts/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
@@ -307,7 +312,7 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
     });
 
     // find all reported product
-    app.get('/find/reportedContent',verifyToken, async(req,res)=>{
+    app.get('/find/reportedContent',verifyToken, verifyModerator, async(req,res)=>{
      const query= { reportStatus :true};
      const result= await productCollection.find(query).toArray();
      res.send(result)
@@ -320,7 +325,7 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
 })
 
 //find reviews by id
-app.get("/find/review/:data",  async (req, res) => {
+app.get("/find/review/:data", verifyToken,verifyModerator,  async (req, res) => {
   const productID= req.params.data;
   const query = {productId: productID };
   const result = await reviewCollection.find(query).toArray();
