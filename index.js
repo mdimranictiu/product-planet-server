@@ -74,7 +74,7 @@ async function run() {
       res.send(result);
     });
     //admin related
-    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+    app.get("/users/admin/:email",  async (req, res) => {
       const email = req.params.email;
       if (email !== req.params.email) {
         return res.status(403).send({ message: "Unauthorized Access" });
@@ -132,7 +132,7 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
 
 
     // moderator 
-    app.get("/users/moderator/:email", verifyToken, async (req, res) => {
+    app.get("/users/moderator/:email",  async (req, res) => {
       const email = req.params.email;
       if (email !== req.params.email) {
         return res.status(403).send({ message: "Unauthorized Access" });
@@ -354,6 +354,8 @@ app.get("/find/review/:data", verifyToken,verifyModerator,  async (req, res) => 
      res.send(result)
  })
 
+
+ // search products
  app.get('/products', async(req,res)=>{
  const query={status:'Accepted'}
  const page= parseInt(req.query.page) || 1 // for first page 1
@@ -371,132 +373,7 @@ app.get("/find/review/:data", verifyToken,verifyModerator,  async (req, res) => 
 
 
 
-
-
-
-    // user related information
-    //    app.post('/users', async (req, res) => {
-    //     const user = req.body;
-    //     // insert email if user doesnt exists:
-    //     // you can do this many ways (1. email unique, 2. upsert 3. simple checking)
-    //     const query = { email: user.email }
-    //     const existingUser = await userCollection.findOne(query);
-    //     if (existingUser) {
-    //       return res.send({ message: 'user already exists', insertedId: null })
-    //     }
-    //     const result = await userCollection.insertOne(user);
-    //     res.send(result);
-    //   });
-
-    //   // JWT related Api
-    //  app.post('/jwt',(req,res)=>{
-    //   const user= req.body;
-    //   const token= jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{
-    //     expiresIn: '1hr'
-    //   })
-    //   res.send({token})
-    //  })
-    //  // veryfi token
-    //  const verifyToken=(req,res,next)=>{
-    //    if(!req.headers.authorization){
-    //     return res.status(401).send('Forbidden Access')
-    //    }
-    //    const token= req.headers.authorization.split(' ')[1]
-    //    jwt.verify(token,process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
-    //     if(err){
-    //       return res.status(401).send('Forbidden Access')
-    //     }
-    //     req.decoded=decoded;
-    //     next()
-    //    });
-    //  }
-    //  // verify admin
-    //  const verifyAdmin=async(req,res,next)=>{
-    //      const email= req.decoded.email;
-    //      const query= {email: email}
-    //      const user= await userCollection.findOne(query);
-    //      const isAdmin=user?.role==='admin';
-    //      if(!isAdmin){
-    //       return res.status(403).send({message: "Forbidden Access"});
-
-    //      }
-    //      next()
-    //  }
-    //  app.get('/users/admin/:email',verifyToken, async(req,res)=>{
-    //    const email= req.params.email;
-    //    if(email !== req.params.email){
-    //     return res.status(403).send({message: 'Unauthorized Access'})
-
-    //    }
-    //    const query= {email : email}
-    //    const user= await userCollection.findOne(query);
-    //    let admin=false;
-    //    if(user){
-    //     admin= user?.role==='admin'
-    //    }
-    //    res.send({admin})
-    //  })
-    // app.get('/users',verifyToken,verifyAdmin,async(req,res)=>{
-    //   const result= await userCollection.find().toArray();
-    //   res.send(result)
-    // })
-    // app.delete('/users/:id',verifyToken,verifyAdmin, async(req,res)=>{
-    //   const id=req.params.id;
-    //   const query={_id: new ObjectId(id)}
-    //   const result= await userCollection.deleteOne(query)
-    //   res.send(result)
-
-    //  })
-
-    //  app.patch('/users/admin/:id',verifyToken,verifyAdmin, async(req,res)=>{
-    //   const id= req.params.id;
-    //   const filter ={ _id: new ObjectId(id)};
-    //   const updateDoc={
-    //     $set:{
-    //       role:"admin"
-    //     }
-    //   }
-    //   const result= await userCollection.updateOne(filter,updateDoc);
-    //   res.send(result)
-    //  })
-
-    // // others realted api
-    //    app.get('/menu',async(req,res)=>{
-    //     const result= await menuCollection.find().toArray();
-    //     res.send(result)
-    //    })
-    //    app.post('/menu',verifyToken,verifyAdmin,async (req,res)=>{
-    //     const item= req.body;
-    //     const result= await menuCollection.insertOne(item);
-    //     res.send(result)
-    //    })
-    //    app.delete('/menu/:id', verifyToken, verifyAdmin, async (req, res) => {
-    //     const id = req.params.id;
-    //     const query = { _id: new ObjectId(id) }
-    //     const result = await menuCollection.deleteOne(query);
-    //     res.send(result);
-    //   })
-    //    app.get('/carts',async(req,res)=>{
-    //     const email=req.query.email;
-    //     const query={email: email}
-    //     const result= await cartCollection.find(query).toArray();
-    //     res.send(result)
-    //    })
-
-    //    app.post('/carts',async(req,res)=>{
-    //    const cartItem=req.body;
-    //    const result= await cartCollection.insertOne(cartItem);
-    //    res.send(result)
-    //    })
-
-    //    app.delete('/carts/:id', async(req,res)=>{
-    //     const id=req.params.id;
-    //     const query={_id: new ObjectId(id)}
-    //     const result= await cartCollection.deleteOne(query)
-    //     res.send(result)
-
-    //    })
-
+// Payment Related
        //payment intent
        app.post('/create-payment-intent',async (req,res)=>{
          const {price}=req.body;
