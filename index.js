@@ -2,7 +2,7 @@ const express = require("express");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const app = express();
-const stripe= require("stripe")(process.env.Stripe_secret_key)
+const stripe = require("stripe")(process.env.Stripe_secret_key);
 const cors = require("cors");
 const port = process.env.PORT || 4100;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -27,7 +27,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     // List of  collections
     const productCollection = client.db("productPlanet").collection("products");
@@ -35,7 +35,6 @@ async function run() {
     const reviewCollection = client.db("productPlanet").collection("reviews");
     const couponCollection = client.db("productPlanet").collection("coupon");
 
-  
     // JWT token Create
 
     app.post("/jwt", (req, res) => {
@@ -71,11 +70,11 @@ async function run() {
         return res.send({ message: "user already exists", insertedId: null });
       }
       const result = await userCollection.insertOne(user);
-      console.log(user)
+      console.log(user);
       res.send(result);
     });
     //admin related
-    app.get("/users/admin/:email",  async (req, res) => {
+    app.get("/users/admin/:email", async (req, res) => {
       const email = req.params.email;
       if (email !== req.params.email) {
         return res.status(403).send({ message: "Unauthorized Access" });
@@ -90,50 +89,52 @@ async function run() {
     });
 
     //verify admin
-    const verifyAdmin=async(req,res,next)=>{
-      const email= req.decoded?.email;
-      const query= {email: email}
-      const user= await userCollection.findOne(query);
-      const isAdmin=user?.role==='admin';
-      console.log('isAdmin',isAdmin)
-      if(!isAdmin){
-       return res.status(403).send({message: "Forbidden Access"});
-    
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded?.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      console.log("isAdmin", isAdmin);
+      if (!isAdmin) {
+        return res.status(403).send({ message: "Forbidden Access" });
       }
-      next()
-    }
+      next();
+    };
 
     //fetch all users
-    app.get('/users',verifyToken,verifyAdmin,async(req,res)=>{
-      const result= await userCollection.find().toArray();
-      res.send(result)
-    })
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
     // moderator related
-    
-    //verify moderator 
- const verifyModerator=async(req,res,next)=>{
-  const email= req.decoded?.email;
-  const query= {email: email}
-  const user= await userCollection.findOne(query);
-  const isModerator=user?.role==='moderator';
-  //console.log('isModerator',isModerator)
-  if(!isModerator){
-   return res.status(403).send({message: "Forbidden Access"});
 
-  }
-  next()
-}
-// product Review by Moderator
+    //verify moderator
+    const verifyModerator = async (req, res, next) => {
+      const email = req.decoded?.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isModerator = user?.role === "moderator";
+      //console.log('isModerator',isModerator)
+      if (!isModerator) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+      next();
+    };
+    // product Review by Moderator
 
-app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
-  const query={status: 'pending'};
-  const result= await productCollection.find(query).toArray();
-  res.send(result)
-})
+    app.get(
+      "/productReview",
+      verifyToken,
+      verifyModerator,
+      async (req, res) => {
+        const query = { status: "pending" };
+        const result = await productCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
 
-
-    // moderator 
-    app.get("/users/moderator/:email",  async (req, res) => {
+    // moderator
+    app.get("/users/moderator/:email", async (req, res) => {
       const email = req.params.email;
       if (email !== req.params.email) {
         return res.status(403).send({ message: "Unauthorized Access" });
@@ -165,39 +166,49 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       res.send(result);
     });
     // make as an moderator
-    app.patch("/users/makeModerator", verifyToken,verifyAdmin, async (req, res) => {
-      const { email: email }=req.body;
-      const filter = {email: email };
-      const options = { upsert: true };
-      const updatedDoc = {
-        $set: req.body,
-      };
+    app.patch(
+      "/users/makeModerator",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const { email: email } = req.body;
+        const filter = { email: email };
+        const options = { upsert: true };
+        const updatedDoc = {
+          $set: req.body,
+        };
 
-      const result = await userCollection.updateOne(
-        filter,
-        updatedDoc,
-        options
-      );
+        const result = await userCollection.updateOne(
+          filter,
+          updatedDoc,
+          options
+        );
 
-      res.send(result);
-    });
+        res.send(result);
+      }
+    );
     // make admin
-    app.patch("/users/makeAdmin", verifyToken, verifyAdmin, async (req, res) => {
-      const { email: email }=req.body;
-      const filter = {email: email };
-      const options = { upsert: true };
-      const updatedDoc = {
-        $set: req.body,
-      };
+    app.patch(
+      "/users/makeAdmin",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const { email: email } = req.body;
+        const filter = { email: email };
+        const options = { upsert: true };
+        const updatedDoc = {
+          $set: req.body,
+        };
 
-      const result = await userCollection.updateOne(
-        filter,
-        updatedDoc,
-        options
-      );
+        const result = await userCollection.updateOne(
+          filter,
+          updatedDoc,
+          options
+        );
 
-      res.send(result);
-    });
+        res.send(result);
+      }
+    );
 
     //make as feature
     app.patch("/makeProductAsFeature/:id", verifyToken, async (req, res) => {
@@ -229,8 +240,8 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
     });
 
     // fetch products
-    app.get("/find/product/:data",  async (req, res) => {
-      const productID= req.params.data;
+    app.get("/find/product/:data", async (req, res) => {
+      const productID = req.params.data;
       const query = { _id: new ObjectId(productID) };
       const result = await productCollection.findOne(query);
       res.send(result);
@@ -242,11 +253,11 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       const result = await productCollection.find(query).toArray();
       res.send(result);
     });
-// all products for admin
-    app.get('/allProducts',verifyToken,verifyAdmin, async(req,res)=>{
+    // all products for admin
+    app.get("/allProducts", verifyToken, verifyAdmin, async (req, res) => {
       const result = await productCollection.find().toArray();
       res.send(result);
-    })
+    });
 
     app.get("/myProducts/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
@@ -254,7 +265,6 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       const result = await productCollection.findOne(query);
       res.send(result);
     });
-   
 
     // delete a product
 
@@ -283,177 +293,224 @@ app.get('/productReview',verifyToken,verifyModerator,async(req,res)=>{
       res.send(result);
     });
     //update upvote
-    app.patch('/product/upvote/:id',verifyToken, async (req, res) => {
+    app.patch("/product/upvote/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const { upvoteCount, user } = req.body;
-    
+
       const query = { _id: new ObjectId(id), upvoters: { $ne: user } };
       const update = {
         $set: { upvoteCount },
         $addToSet: { upvoters: user }, // Add user to upvoters if not already present
       };
-    
+
       const result = await productCollection.updateOne(query, update);
       res.send(result);
     });
 
     // report content
-    app.patch('/product/report/:id', verifyToken, async (req, res) => {
+    app.patch("/product/report/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const { reportStatus, user } = req.body;
-    
+
       const query = { _id: new ObjectId(id), reporters: { $ne: user } };
       const update = {
         $set: { reportStatus },
         $addToSet: { reporters: user }, // Add user to reporters if not already present
       };
-    
+
       const result = await productCollection.updateOne(query, update);
       res.send(result);
     });
 
     // find all reported product
-    app.get('/find/reportedContent',verifyToken, verifyModerator, async(req,res)=>{
-     const query= { reportStatus :true};
-     const result= await productCollection.find(query).toArray();
-     res.send(result)
-    })
+    app.get(
+      "/find/reportedContent",
+      verifyToken,
+      verifyModerator,
+      async (req, res) => {
+        const query = { reportStatus: true };
+        const result = await productCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
     // review submit
-    app.post('/addreview',verifyToken,async (req,res)=>{
-          const item= req.body;
-          const result= await reviewCollection.insertOne(item);
-          res.send(result)
-})
+    app.post("/addreview", verifyToken, async (req, res) => {
+      const item = req.body;
+      const result = await reviewCollection.insertOne(item);
+      res.send(result);
+    });
 
-//find reviews by id
-app.get("/find/review/:data", verifyToken,verifyModerator,  async (req, res) => {
-  const productID= req.params.data;
-  const query = {productId: productID };
-  const result = await reviewCollection.find(query).toArray();
-  res.send(result);
-});
+    //find reviews by id
+    app.get("/find/review/:data", verifyToken, async (req, res) => {
+      const productID = req.params.data;
+      const query = { productId: productID };
+      const result = await reviewCollection.find(query).toArray();
+      res.send(result);
+    });
     //get payment Status
 
-  app.get('/users/payment-status/:email',verifyToken, async(req,res)=>{
-    const email=req.params.email
-    const query= {email: email};
-    //console.log('inside payment',email)
-    const result= await userCollection.findOne(query);
-    res.send(result)
-  })
+    app.get("/users/payment-status/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      //console.log('inside payment',email)
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
 
-// get feature data
+    // get feature data
 
- app.get('/feature-product', async(req,res)=>{
-     const query= {feature:true}
-     const result= await productCollection.find(query).sort({createdAt:-1}).limit(6).toArray();
-     res.send(result)
- })
- // get trending product
- app.get('/trending-product', async(req,res)=>{
-     const result= await productCollection.find().sort({upvoteCount:-1}).limit(6).toArray();
-     res.send(result)
- })
+    app.get("/feature-product", async (req, res) => {
+      const query = { feature: true };
+      const result = await productCollection
+        .find(query)
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+    // get trending product
+    app.get("/trending-product", async (req, res) => {
+      const result = await productCollection
+        .find()
+        .sort({ upvoteCount: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
 
+    // search products
+    app.get("/products", async (req, res) => {
+      const query = { status: "Accepted" };
+      const page = parseInt(req.query.page) || 1; // for first page 1
+      const skip = (page - 1) * 6;
+      const search = req.query?.search;
+      if (search) {
+        query["tags.text"] = { $regex: search, $options: "i" };
+      }
+      const total = await productCollection.countDocuments(query);
+      const result = await productCollection
+        .find(query)
+        .skip(skip)
+        .limit(6)
+        .toArray();
+      res.send({
+        products: result,
+        currentPage: page,
+        totalPages: Math.ceil(total / 6),
+        totalProducts: total,
+      });
+    });
 
- // search products
- app.get('/products', async(req,res)=>{
- const query={status:'Accepted'}
- const page= parseInt(req.query.page) || 1 // for first page 1
- const skip =(page-1)*6;
- const search= req.query?.search;
-  if(search){
-    query['tags.text']= {$regex: search, $options: 'i'}
-  } 
-  const total= await productCollection.countDocuments(query);
-  const result= await productCollection.find(query).skip(skip).limit(6).toArray();
-  res.send({products: result, currentPage:page,totalPages: Math.ceil(total/6),totalProducts: total,})
-})
+    app.get("/find/validCoupon", async (req, res) => {
+      try {
+        const currentDate = new Date(); // Get today's date
 
+        // Fetch all coupons
+        const coupons = await couponCollection.find().toArray();
 
-// add coupon
-app.post('/add/coupon', verifyToken,verifyAdmin, async(req,res)=>{
-  const data=req.body;
-  const result= await couponCollection.insertOne(data);
-  res.send(result);
-})
-//fetch coupon
-app.get('/find/coupon',verifyToken,verifyAdmin, async(req,res)=>{
-  const result= await couponCollection.find().toArray();
-  res.send(result)
-})
-
-app.delete("/coupon/delete/:id", verifyToken,verifyAdmin, async (req, res) => {
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
-  const result = await couponCollection.deleteOne(query);
-  res.send(result);
-});
-
-//update coupon
-app.patch("/UpdateCoupon/:id", verifyToken,verifyAdmin, async (req, res) => {
-  const id = req.params.id;
-  const filter = { _id: new ObjectId(id) };
-  const options = { upsert: true };
-  const updatedDoc = {
-    $set: req.body,
-  };
-
-  const result = await couponCollection.updateOne(
-    filter,
-    updatedDoc,
-    options
-  );
-
-  res.send(result);
-});
-
-// find a coupon by id
-app.get("/coupon/:id", verifyToken,verifyAdmin, async (req, res) => {
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
-  const result = await couponCollection.findOne(query);
-  res.send(result);
-});
-
-
-// Payment Related
-       //payment intent
-       app.post('/create-payment-intent',async (req,res)=>{
-         const {price}=req.body;
-         const amount= parseInt(price *100)
-
-         const paymentIntent= await stripe.paymentIntents.create({
-          amount : amount,
-          currency:"usd",
-          payment_method_types:['card']
-         })
-         res.send({
-          clientSecret: paymentIntent.client_secret,
+        // Filter only valid (non-expired) coupons
+        const validCoupons = coupons.filter((coupon) => {
+          return new Date(coupon.ExpiredDate) >= currentDate;
         });
-       })
-       app.patch('/payment/:email',verifyToken,async(req,res)=>{
-        const email= req.params.email;
-        const filter = {email: email};
+
+        res.status(200).json(validCoupons);
+      } catch (error) {
+        console.error("Error fetching coupons:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    });
+
+    // add coupon
+    app.post("/add/coupon", verifyToken, verifyAdmin, async (req, res) => {
+      const data = req.body;
+      const result = await couponCollection.insertOne(data);
+      res.send(result);
+    });
+    //fetch coupon
+    app.get("/find/coupon", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await couponCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.delete(
+      "/coupon/delete/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await couponCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
+
+    //update coupon
+    app.patch(
+      "/UpdateCoupon/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
         const options = { upsert: true };
         const updatedDoc = {
-          $set: { paystatus: true }
+          $set: req.body,
         };
-  
-        const result = await userCollection.updateOne(
+
+        const result = await couponCollection.updateOne(
           filter,
           updatedDoc,
           options
         );
+
         res.send(result);
-       })
-      
+      }
+    );
+
+    // find a coupon by id
+    app.get("/coupon/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await couponCollection.findOne(query);
+      res.send(result);
+    });
+
+    // Payment Related
+    //payment intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+    app.patch("/payment/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: { paystatus: true },
+      };
+
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     //await client.close();
