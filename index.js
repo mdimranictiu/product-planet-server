@@ -34,6 +34,8 @@ async function run() {
     const userCollection = client.db("productPlanet").collection("users");
     const reviewCollection = client.db("productPlanet").collection("reviews");
     const couponCollection = client.db("productPlanet").collection("coupon");
+    const CommingSoonCollection = client.db("productPlanet").collection("ComingSoonProducts");
+    const userReviewCollection = client.db("productPlanet").collection("userReview");
 
     // JWT token Create
 
@@ -503,6 +505,17 @@ async function run() {
         updatedDoc,
         options
       );
+      res.send(result);
+    });
+
+    //coming soon products
+    app.get("/comingsoon-products", async (req, res) => {
+      const result = await CommingSoonCollection.find().toArray();
+      res.send(result);
+    });
+    // find reviews
+    app.get("/user-reviews", async (req, res) => {
+      const result = await userReviewCollection.find().toArray();
       res.send(result);
     });
 
