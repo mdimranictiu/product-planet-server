@@ -36,6 +36,8 @@ async function run() {
     const couponCollection = client.db("productPlanet").collection("coupon");
     const CommingSoonCollection = client.db("productPlanet").collection("ComingSoonProducts");
     const userReviewCollection = client.db("productPlanet").collection("userReview");
+    const contactsCollection = client.db("productPlanet").collection("contacts");
+    const advertiseCollection = client.db("productPlanet").collection("advertise");
 
     // JWT token Create
 
@@ -382,26 +384,46 @@ async function run() {
 
     // search products
     app.get("/products", async (req, res) => {
-      const query = { status: "Accepted" };
-      const page = parseInt(req.query.page) || 1; // for first page 1
-      const skip = (page - 1) * 6;
-      const search = req.query?.search;
-      if (search) {
-        query["tags.text"] = { $regex: search, $options: "i" };
+      try {
+        const page = parseInt(req.query.page) || 1; // Default page 1
+        const limit = 6; // Limit per page
+        const skip = (page - 1) * limit;
+        const search = req.query?.search;
+    
+        // Base query
+        let query = { status: "Accepted" };
+    
+        // If search query exists, modify the query object
+        if (search) {
+          query.$or = [
+            { productName: { $regex: search, $options: "i" } },
+            { "tags.text": { $regex: search, $options: "i" } }
+          ];
+        }
+    
+        // Fetch total product count
+        const total = await productCollection.countDocuments(query);
+    
+        // Fetch paginated products
+        const products = await productCollection
+          .find(query)
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+    
+        // Send response
+        res.status(200).json({
+          products,
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalProducts: total
+        });
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        res.status(500).json({ message: "Internal server error" });
       }
-      const total = await productCollection.countDocuments(query);
-      const result = await productCollection
-        .find(query)
-        .skip(skip)
-        .limit(6)
-        .toArray();
-      res.send({
-        products: result,
-        currentPage: page,
-        totalPages: Math.ceil(total / 6),
-        totalProducts: total,
-      });
     });
+    
 
     app.get("/find/validCoupon", async (req, res) => {
       try {
@@ -517,6 +539,27 @@ async function run() {
     app.get("/user-reviews", async (req, res) => {
       const result = await userReviewCollection.find().toArray();
       res.send(result);
+    });
+
+    app.post("/submit/contact", async (req, res) => {
+      const contact = req.body;
+    
+      try {
+        const result = await contactsCollection.insertOne(contact);
+        res.status(201).json(result);
+      } catch (error) {
+        res.status(500).json({ message: "Error ", error });
+      }
+    });
+    app.post("/submit/advertise", async (req, res) => {
+      const advertise = req.body;
+    
+      try {
+        const result = await advertiseCollection.insertOne(advertise);
+        res.status(201).json(result);
+      } catch (error) {
+        res.status(500).json({ message: "Error ", error });
+      }
     });
 
     // Send a ping to confirm a successful connection
