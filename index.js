@@ -38,6 +38,7 @@ async function run() {
     const userReviewCollection = client.db("productPlanet").collection("userReview");
     const contactsCollection = client.db("productPlanet").collection("contacts");
     const advertiseCollection = client.db("productPlanet").collection("advertise");
+    const subscribeCollection = client.db("productPlanet").collection("subscribe");
 
     // JWT token Create
 
@@ -343,6 +344,11 @@ async function run() {
       const result = await reviewCollection.insertOne(item);
       res.send(result);
     });
+    app.post("/subscribe",  async (req, res) => {
+      const email = req.body;
+      const result = await subscribeCollection.insertOne(email);
+      res.send(result);
+    });
 
     //find reviews by id
     app.get("/find/review/:data", verifyToken, async (req, res) => {
@@ -389,6 +395,7 @@ async function run() {
         const limit = 6; // Limit per page
         const skip = (page - 1) * limit;
         const search = req.query?.search;
+        const sortOption = req.query?.sort || "latest"; // Get the sort option (default to 'latest')
     
         // Base query
         let query = { status: "Accepted" };
@@ -401,14 +408,23 @@ async function run() {
           ];
         }
     
+        // Sorting logic
+        let sort = {};
+        if (sortOption === "latest") {
+          sort = { createdAt: -1 }; // Sort by creation date (descending)
+        } else if (sortOption === "popular") {
+          sort = { upvoteCount: -1 }; // Sort by upvote count (descending)
+        }
+    
         // Fetch total product count
         const total = await productCollection.countDocuments(query);
     
-        // Fetch paginated products
+        // Fetch paginated products with sorting
         const products = await productCollection
           .find(query)
           .skip(skip)
           .limit(limit)
+          .sort(sort) // Apply the sorting
           .toArray();
     
         // Send response
